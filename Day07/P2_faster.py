@@ -20,7 +20,7 @@ for line in lines:
 n = len(equations)
 
 
-# Evaluate left-to-right
+# Evaluate right-to-left
 def get_val(numbers, bin, target_val):
     rem_val = target_val
     bin_rem = bin
