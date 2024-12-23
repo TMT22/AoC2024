@@ -24,11 +24,14 @@ vector<vector<pll> > graph;
 vl distances;
 vl previous;
 
+vl distances_start;
+vl previous_start;
+
 vector<string> board;
 
 pll start_coor, end_corr;
 
-
+set<pll> on_path;
 
 bool in_board(pll pos){
   return pos.xx >= 0 && pos.xx < m && pos.yy < n && pos.yy >= 0;
@@ -40,7 +43,7 @@ void run_dijkstra(){
   distances = vl(graph.size(), oo);
   previous = vl(graph.size(), -1);
 
-  pll start = mp(0, start_coor.yy*m + start_coor.xx);
+  pll start = mp(0, end_corr.yy*m + end_corr.xx);
 
   q.push(mp(start, -1));
 
@@ -72,12 +75,53 @@ void run_dijkstra(){
   }
 }
 
-ll pos_to_save(pll pos){
+
+
+void run_dijkstra_start(){
+  std::priority_queue<pair<pll, ll>, std::vector<pair<pll, ll> >, std::greater<pair<pll, ll> > > q;
+  
+  distances_start = vl(graph.size(), oo);
+  previous_start = vl(graph.size(), -1);
+
+  pll start = mp(0, start_coor.yy*m + start_coor.xx);
+
+  q.push(mp(start, -1));
+
+  while(!q.empty()){
+    pair<pll, ll> curr_content = q.top(); q.pop();
+
+    pll curr = curr_content.xx;
+    ll prev_node = curr_content.yy;
+
+    if(distances_start[curr.yy] <= curr.xx) continue;
+
+
+    distances_start[curr.yy] = curr.xx;
+    previous_start[curr.yy] = prev_node;
+
+    FOR(j, 0, graph[curr.yy].size()){
+
+      pll next = graph[curr.yy][j];
+
+      ll dist = next.xx;
+      ll next_node = next.yy;
+
+      if(distances_start[curr.yy]+dist < distances_start[next_node]){
+        q.push(mp(mp(distances_start[curr.yy]+dist, next_node), curr.yy));
+
+      }
+
+    }
+  }
+}
+
+
+ll pos_to_save(pll pos, ll min_score){
   if(board[pos.yy][pos.xx] == '#') return 0;
   ll total = 0;
 
   FOR(i, -21, 22)FOR(j, -21, 22){
-    if(abs(i)+abs(j) >= 21) continue;
+    if(abs(i)+abs(j) > 20) continue;
 
     pll next_pos = mp(pos.xx+i, pos.yy+j);
 
@@ -85,11 +129,13 @@ ll pos_to_save(pll pos){
     if(!in_board(next_pos)) continue;
     if(board[next_pos.yy][next_pos.xx] == '#') continue;
 
+    ll time_no_cheat = distances[pos.yy*m + pos.xx] + distances_start[pos.yy*m + pos.xx];
+    ll time_with_cheat = distances[next_pos.yy*m + next_pos.xx] + distances_start[pos.yy*m + pos.xx] + (abs(i)+abs(j));
 
-    ll saved =  distances[next_pos.yy*m + next_pos.xx] - distances[pos.yy*m + pos.xx] - (abs(i)+abs(j));
-    
-    if(saved < 100) continue;
-    
+    ll saved = min_score - time_with_cheat;
+    if(saved < 1) continue;
+    cout << saved<< endl;
+    if(saved < 40) continue;
     total++;
   }
 
@@ -102,7 +148,7 @@ int main(){
   ios_base::sync_with_stdio (false);
   cin.tie(NULL);
 
-  ifstream file("Inputs/Test01.txt");
+  ifstream file("Inputs/Input2.txt");
   string str;
   board = vector<string>();
   while (std::getline(file, str)) board.pb(str);
@@ -127,14 +173,44 @@ int main(){
   }
 
   run_dijkstra();
-  ll min_score = distances[end_corr.yy*m + end_corr.xx];
+  run_dijkstra_start();
+
+  ll min_score = distances[start_coor.yy*m + start_coor.xx];
 
 
   ll total = 0;
-  
-  FOR(y, 0, n)FOR(x, 0, m){
-      total += pos_to_save(mp(x, y));
+  pll curr_corr  = start_coor;
+  on_path.insert(end_corr);
+
+  while(curr_corr.xx != end_corr.xx || curr_corr.yy != end_corr.yy){
+    on_path.insert(curr_corr);
+    ll curr_corr_n = previous[curr_corr.yy*m+curr_corr.xx];
+
+    curr_corr.xx = curr_corr_n % m;
+    curr_corr.yy = curr_corr_n / m;
   }
+  on_path.insert(end_corr);
+
+  
+  
+  
+  FOR(y, 0, n)FOR(x, 0, m) {
+    total += pos_to_save(mp(x, y), min_score);
+  }
+ 
+ /*
+  curr_corr  = start_coor;
+  
+  while(curr_corr.xx != end_corr.xx || curr_corr.yy != end_corr.yy){
+    //cout << curr_corr.xx << " " << curr_corr.yy << endl;
+    //cout << pos_to_save(curr_corr, min_score) << endl;
+    total += pos_to_save(curr_corr, min_score);
+    ll curr_corr_n = previous[curr_corr.yy*m+curr_corr.xx];
+
+    curr_corr.xx = curr_corr_n % m;
+    curr_corr.yy = curr_corr_n / m;
+  }
+   */
   
 
 
